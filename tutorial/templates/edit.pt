@@ -39,7 +39,7 @@
         </div>
         <div id="right" class="app-welcome align-right">
             <span tal:condition="logged_in">
-                <a href="${request.application_url}/loguot">Logout</a>
+                <a href="${request.application_url}/logout">Logout</a>
             </span>
         </div>
       </div>
