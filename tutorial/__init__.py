@@ -29,5 +29,7 @@ def main(global_config, **settings):
     config.add_route('view_page', '/{pagename}')
     config.add_route('add_page', 'add_page/{pagename}')
     config.add_route('edit_page', '{pagename}/edit_page')
+    config.add_route('login', '/login')
+    config.add_route('logout', '/logout')
     config.scan()
     return config.make_wsgi_app()
