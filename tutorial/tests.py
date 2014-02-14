@@ -22,3 +22,23 @@ def _registerRoutes(config):
     config.add_route('view_page', '{pagename}')
     config.add_route('edit_page', '{pagename}/edit_page')
     config.add_route('add_page', 'add_page/{pagename}')
+
+class PageModelTests(unittest.TestCase):
+
+    def setUp(self):
+        self.session = _initTestingDB()
+
+    def tearDown(self):
+        self.session.remove()
+
+    def _getTargetClass(self):
+        from tutorial.models import Page
+        return Page
+
+    def _makeOne(self, name='SomeName', data='some data'):
+        return self._getTargetClass()(name, data)
+
+    def test_constructor(self):
+        sut = self._makeOne()
+        self.assertEqual(sut.name, 'SomeName')
+        self.assertEqual(sut.data, 'some data')
