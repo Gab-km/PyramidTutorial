@@ -77,7 +77,8 @@ def edit_page(request):
         return HTTPFound(location=request.route_url('view_page', pagename=pagename))
     return dict(page=page,
                 save_url=request.route_url('edit_page', pagename=pagename),
-                logged_in=authenticated_userid(request))
+                logged_in=authenticated_userid(request),
+                )
 
 @view_config(route_name='login', renderer='templates/login.pt')
 @forbidden_view_config(renderer='templates/login.pt')
