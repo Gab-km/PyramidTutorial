@@ -42,3 +42,21 @@ class PageModelTests(unittest.TestCase):
         sut = self._makeOne()
         self.assertEqual(sut.name, 'SomeName')
         self.assertEqual(sut.data, 'some data')
+
+class ViewWikiTests(unittest.TestCase):
+
+    def setUp(self):
+        self.config = testing.setUp()
+
+    def tearDown(self):
+        testing.tearDown()
+
+    def _callFUT(self, request):
+        from tutorial.views import view_wiki
+        return view_wiki(request)
+
+    def test_it(self):
+        _registerRoutes(self.config)
+        request = testing.DummyRequest()
+        response = self._callFUT(request)
+        self.assertEqual(response.location, 'http://example.com/FrontPage')
