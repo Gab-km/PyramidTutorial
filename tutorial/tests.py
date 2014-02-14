@@ -3,31 +3,22 @@ import transaction
 
 from pyramid import testing
 
-from .models import DBSession
+def _initTestingDB():
+    from sqlalchemy import create_engine
+    from tutorial.models import (
+        DBSession,
+        Page,
+        Base
+        )
+    engine = create_engine('sqlite://')
+    Base.metadata.create_all(engine)
+    DBSession.configure(bind=engine)
+    with transaction.manager:
+        model = Page('FrontPage', 'This is the front page')
+        DBSession.add(model)
+    return DBSession
 
-
-class TestMyView(unittest.TestCase):
-    def setUp(self):
-        self.config = testing.setUp()
-        from sqlalchemy import create_engine
-        engine = create_engine('sqlite://')
-        from .models import (
-            Base,
-            MyModel,
-            )
-        DBSession.configure(bind=engine)
-        Base.metadata.create_all(engine)
-        with transaction.manager:
-            model = MyModel(name='one', value=55)
-            DBSession.add(model)
-
-    def tearDown(self):
-        DBSession.remove()
-        testing.tearDown()
-
-    def test_it(self):
-        from .views import my_view
-        request = testing.DummyRequest()
-        info = my_view(request)
-        self.assertEqual(info['one'].name, 'one')
-        self.assertEqual(info['project'], 'tutorial')
+def _registerRoutes(config):
+    config.add_route('view_page', '{pagename}')
+    config.add_route('edit_page', '{pagename}/edit_page')
+    config.add_route('add_page', 'add_page/{pagename}')
