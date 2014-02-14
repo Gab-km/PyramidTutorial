@@ -60,3 +60,37 @@ class ViewWikiTests(unittest.TestCase):
         request = testing.DummyRequest()
         response = self._callFUT(request)
         self.assertEqual(response.location, 'http://example.com/FrontPage')
+
+class ViewPageTests(unittest.TestCase):
+
+    def setUp(self):
+        self.session = _initTestingDB()
+        self.config = testing.setUp()
+
+    def tearDown(self):
+        self.session.remove()
+        testing.tearDown()
+
+    def _callFUT(self, request):
+        from tutorial.views import view_page
+        return view_page(request)
+
+    def test_it(self):
+        from tutorial.models import Page
+        request = testing.DummyRequest()
+        request.matchdict['pagename'] = 'IDoExist'
+        page = Page('IDoExist', 'Hello CruelWorld IDoExist')
+        self.session.add(page)
+        _registerRoutes(self.config)
+        info = self._callFUT(request)
+        self.assertEqual(info['page'], page)
+        self.assertEqual(
+            info['content'],
+            '<div class="document">\n'
+            '<p>Hello <a href="http://example.com/add_page/CruelWorld">'
+            'CruelWorld</a> '
+            '<a href="http://example.com/IDoExist">'
+            'IDoExist</a>'
+            '</p>\n</div>\n'
+        )
+        self.assertEqual(info['edit_url'], 'http://example.com/IDoExist/edit_page')
