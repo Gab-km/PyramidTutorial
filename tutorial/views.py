@@ -13,6 +13,7 @@ from pyramid.view import (
 from pyramid.security import (
     remember,
     forget,
+    authenticated_userid,
     )
 
 from .security import USERS
@@ -49,7 +50,10 @@ def view_page(request):
     content = publish_parts(page.data, writer_name='html')['html_body']
     content = wikiwords.sub(check, content)
     edit_url = request.route_url('edit_page', pagename=pagename)
-    return dict(page=page, content=content, edit_url=edit_url)
+    return dict(page=page,
+                content=content,
+                edit_url=edit_url,
+                logged_in=authenticated_userid(request))
 
 @view_config(route_name='add_page', renderer='templates/edit.pt', permission='edit')
 def add_page(request):
@@ -61,7 +65,7 @@ def add_page(request):
         return HTTPFound(location=request.route_url('view_page', pagename=pagename))
     save_url = request.route_url('add_page', pagename=pagename)
     page = Page('', '')
-    return dict(page=page, save_url=save_url)
+    return dict(page=page, save_url=save_url, logged_in=authenticated_userid(request))
 
 @view_config(route_name='edit_page', renderer='templates/edit.pt', permission='edit')
 def edit_page(request):
@@ -71,7 +75,9 @@ def edit_page(request):
         page.data = request.params['body']
         DBSession.add(page)
         return HTTPFound(location=request.route_url('view_page', pagename=pagename))
-    return dict(page=page, save_url=request.route_url('edit_page', pagename=pagename),)
+    return dict(page=page,
+                save_url=request.route_url('edit_page', pagename=pagename),
+                logged_in=authenticated_userid(request))
 
 @view_config(route_name='login', renderer='templates/login.pt')
 @forbidden_view_config(renderer='templates/login.pt')
