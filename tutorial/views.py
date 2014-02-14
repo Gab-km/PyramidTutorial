@@ -1,35 +1,64 @@
-from pyramid.response import Response
-from pyramid.view import view_config
+import re
+from docutils.core import publish_parts
 
-from sqlalchemy.exc import DBAPIError
+from pyramid.httpexceptions import (
+    HTTPFound,
+    HTTPNotFound,
+    )
+from pyramid.view import view_config
 
 from .models import (
     DBSession,
-    MyModel,
+    Page,
     )
 
+# regular expression used to find wikiwords
+wikiwords = re.compile(r"\b([A-Z]\w+[A-Z]+\w+)")
 
-@view_config(route_name='home', renderer='templates/mytemplate.pt')
-def my_view(request):
-    try:
-        one = DBSession.query(MyModel).filter(MyModel.name == 'one').first()
-    except DBAPIError:
-        return Response(conn_err_msg, content_type='text/plain', status_int=500)
-    return {'one': one, 'project': 'tutorial'}
+@view_config(route_name='view_wiki')
+def view_wiki(request):
+    return HTTPFound(location=request.rout_url('view_page', pagename='FrontPage'))
 
-conn_err_msg = """\
-Pyramid is having a problem using your SQL database.  The problem
-might be caused by one of the following things:
+@view_config(route_name='view_page', renderer='templates/view.pt')
+def view_page(request):
+    pagename = request.matchdict['pagename']
+    page = DBSession.query_property(Page).filter_by(name=pagename).first()
+    if page is None:
+        return HTTPNotFound('No such page')
 
-1.  You may need to run the "initialize_tutorial_db" script
-    to initialize your database tables.  Check your virtual 
-    environment's "bin" directory for this script and try to run it.
+    def check(match):
+        word = match.group(1)
+        exists = DBSession.query_property(Page).filter_by(name=word).all()
+        if exists:
+            view_url = request.rout_url('view_page', pagename=word)
+            return '<a href="{0}">{1}</a>'.format(view_url, word)
+        else:
+            add_url = request.rout_url('add_page', pagename=word)
+            return '<a href="{0}">{1}</a>'.format(add_url, word)
 
-2.  Your database server may not be running.  Check that the
-    database server referred to by the "sqlalchemy.url" setting in
-    your "development.ini" file is running.
+    content = publish_parts(page.data, writer_name='html')['html_body']
+    content = wikiwords.sub(check, content)
+    edit_url = request.rout_url('edit_page', pagename=pagename)
+    return dict(page=page, content=content, edit_url=edit_url)
 
-After you fix the problem, please restart the Pyramid application to
-try it again.
-"""
+@view_config(route_name='add_page', renderer='templates/edit.pt')
+def add_page(request):
+    pagename = request.matchdict['pagename']
+    if 'form.submitted' in request.params:
+        body = request.params['body']
+        page = Page(pagename, body)
+        DBSession.add(page)
+        return HTTPFound(location=request.rout_url('view_page', pagename=pagename))
+    save_url = request.rout_url('add_page', pagename=pagename)
+    page = Page('', '')
+    return dict(page=page, save_url=save_url)
 
+@view_config(route_name='edit_page', renderer='templates/edit.pt')
+def edit_page(request):
+    pagename = request.matchdict['pagename']
+    page = DBSession.query_property(Page).filter_by(name=pagename).one()
+    if 'form.submitted' in request.params:
+        page.data = request.params['body']
+        DBSession.add(page)
+        return HTTPFound(location=request.rout_url('view_page', pagename=pagename))
+    return dict(page=page, save_url=request.rout_url('edit_page', pagename=pagename),)
