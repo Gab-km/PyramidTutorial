@@ -94,3 +94,34 @@ class ViewPageTests(unittest.TestCase):
             '</p>\n</div>\n'
         )
         self.assertEqual(info['edit_url'], 'http://example.com/IDoExist/edit_page')
+
+class AddPageTests(unittest.TestCase):
+
+    def setUp(self):
+        self.session = _initTestingDB()
+        self.config = testing.setUp()
+
+    def tearDown(self):
+        self.session.remove()
+        testing.tearDown()
+
+    def _callFUT(self, request):
+        from tutorial.views import add_page
+        return add_page(request)
+
+    def test_it_notsubmitted(self):
+        _registerRoutes(self.config)
+        request = testing.DummyRequest()
+        request.matchdict = {'pagename':'AnotherPage'}
+        info = self._callFUT(request)
+        self.assertEqual(info['page'].data, '')
+        self.assertEqual(info['save_url'], 'http://example.com/add_page/AnotherPage')
+
+    def test_it_submitted(self):
+        from tutorial.models import Page
+        _registerRoutes(self.config)
+        request = testing.DummyRequest({'form.submitted': True, 'body': 'Hello yo!'})
+        request.matchdict = {'pagename': 'AnotherPage'}
+        self._callFUT(request)
+        page = self.session.query(Page).filter_by(name='AnotherPage').one()
+        self.assertEqual(page.data, 'Hello yo!')
