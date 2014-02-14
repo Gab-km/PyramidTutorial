@@ -15,11 +15,11 @@ from .models import (
 # regular expression used to find wikiwords
 wikiwords = re.compile(r"\b([A-Z]\w+[A-Z]+\w+)")
 
-@view_config(route_name='view_wiki')
+@view_config(route_name='view_wiki', permission='view')
 def view_wiki(request):
     return HTTPFound(location=request.route_url('view_page', pagename='FrontPage'))
 
-@view_config(route_name='view_page', renderer='templates/view.pt')
+@view_config(route_name='view_page', renderer='templates/view.pt', permission='view')
 def view_page(request):
     pagename = request.matchdict['pagename']
     page = DBSession.query(Page).filter_by(name=pagename).first()
@@ -41,7 +41,7 @@ def view_page(request):
     edit_url = request.route_url('edit_page', pagename=pagename)
     return dict(page=page, content=content, edit_url=edit_url)
 
-@view_config(route_name='add_page', renderer='templates/edit.pt')
+@view_config(route_name='add_page', renderer='templates/edit.pt', permission='edit')
 def add_page(request):
     pagename = request.matchdict['pagename']
     if 'form.submitted' in request.params:
@@ -53,7 +53,7 @@ def add_page(request):
     page = Page('', '')
     return dict(page=page, save_url=save_url)
 
-@view_config(route_name='edit_page', renderer='templates/edit.pt')
+@view_config(route_name='edit_page', renderer='templates/edit.pt', permission='edit')
 def edit_page(request):
     pagename = request.matchdict['pagename']
     page = DBSession.query(Page).filter_by(name=pagename).one()
