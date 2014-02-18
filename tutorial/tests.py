@@ -125,3 +125,39 @@ class AddPageTests(unittest.TestCase):
         self._callFUT(request)
         page = self.session.query(Page).filter_by(name='AnotherPage').one()
         self.assertEqual(page.data, 'Hello yo!')
+
+class EditPageTests(unittest.TestCase):
+
+    def setUp(self):
+        self.session = _initTestingDB()
+        self.config = testing.setUp()
+
+    def tearDown(self):
+        self.session.remove()
+        testing.tearDown()
+
+    def _callFUT(self, request):
+        from tutorial.views import edit_page
+        return edit_page(request)
+
+    def test_it_notsubmitted(self):
+        from tutorial.models import Page
+        _registerRoutes(self.config)
+        request = testing.DummyRequest()
+        request.matchdict = {'pagename': 'abc'}
+        page = Page('abc', 'hello')
+        self.session.add(page)
+        info = self._callFUT(request)
+        self.assertEqual(info['page'], page)
+        self.assertEqual(info['save_url'], 'http://example.com/abc/edit_page')
+
+    def test_it_submitted(self):
+        from tutorial.models import Page
+        _registerRoutes(self.config)
+        request = testing.DummyRequest({'form.submitted': True, 'body': 'Hello yo!'})
+        request.matchdict = {'pagename': 'abc'}
+        page = Page('abc', 'hello')
+        self.session.add(page)
+        response = self._callFUT(request)
+        self.assertEqual(response.location, 'http://example.com/abc')
+        self.assertEqual(page.data, 'Hello yo!')
