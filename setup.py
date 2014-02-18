@@ -15,6 +15,7 @@ requires = [
     'zope.sqlalchemy',
     'waitress',
     'docutils',
+    'webtest',
     ]
 
 setup(name='tutorial',
